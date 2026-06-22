@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Any
 
 
+CONTROL_DIR_REFERENCES = (".rlm_control", ".rlm-control", "rlm_control")
+
+
 class ReadOnlyDict(dict):
     @staticmethod
     def _blocked(*args, **kwargs):
@@ -38,6 +41,12 @@ def _resolve_workspace_path(path: str | os.PathLike[str], workspace: Path) -> Pa
     if not _is_under(candidate, workspace):
         raise ValueError(f"path is outside the workspace: {path}")
     return candidate
+
+
+def _reject_control_dir_reference(value: str | os.PathLike[str]) -> None:
+    text = os.fspath(value).lower()
+    if any(reference in text for reference in CONTROL_DIR_REFERENCES):
+        raise PermissionError("access denied to the RLM control directory")
 
 
 def _parse_file(path: Path, timeout: int = 120) -> str:
@@ -79,6 +88,7 @@ def load_runtime_namespace(
         offset: int | None = None,
         limit: int | None = None,
     ) -> str:
+        _reject_control_dir_reference(path)
         resolved = _resolve_workspace_path(path, workspace)
         if not resolved.exists():
             return f"Error: file not found: {resolved}"
@@ -96,6 +106,7 @@ def load_runtime_namespace(
         return "\n".join(lines[start:end])
 
     def write(path: str | os.PathLike[str], content: object) -> str:
+        _reject_control_dir_reference(path)
         raw_path = Path(path)
         resolved = (
             _resolve_workspace_path(raw_path, workspace)
@@ -114,6 +125,7 @@ def load_runtime_namespace(
     def bash(command: str, timeout: int | None = None) -> dict[str, Any]:
         if not isinstance(command, str) or not command.strip():
             raise ValueError("command is required")
+        _reject_control_dir_reference(command)
         timeout_seconds = int(timeout or os.environ.get("RLM_SHELL_TIMEOUT", "60"))
         try:
             result = subprocess.run(

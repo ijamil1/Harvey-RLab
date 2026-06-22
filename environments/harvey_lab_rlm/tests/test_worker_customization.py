@@ -30,7 +30,12 @@ def test_worker_customization_injects_runtime_and_deliverable_collection() -> No
     script = customize_python_worker_script(BASE_WORKER)
 
     assert "load_runtime_namespace" in script
-    assert 'namespace.update(load_runtime_namespace("/workspace/.lab/bootstrap.json"))' in script
+    assert 'lab_namespace = load_runtime_namespace("/workspace/.lab/bootstrap.json")' in script
+    assert 'shutil.rmtree("/workspace/.lab")' in script
+    assert "namespace.update(lab_namespace)" in script
+    assert script.index("load_runtime_namespace") < script.index(
+        'shutil.rmtree("/workspace/.lab")'
+    )
     assert 'result.update(namespace["_collect_deliverables"]())' in script
     assert '"extra_data": extra_data' not in script
 
@@ -47,19 +52,21 @@ def test_worker_customization_matches_pinned_verifiers_template() -> None:
     )
 
     paths = RLMWorkerPaths(
-        base_dir="/workspace/.rlm-control",
-        command_fifo="/workspace/.rlm-control/command",
-        response_fifo="/workspace/.rlm-control/response",
-        ready_flag="/workspace/.rlm-control/ready",
-        worker_path="/workspace/.rlm-control/worker.py",
-        worker_pid_file="/workspace/.rlm-control/pid",
-        context_file="/workspace/.rlm-control/context.json",
-        answer_file="/workspace/.rlm-control/answer.json",
-        log_file="/workspace/.rlm-control/worker.log",
+        base_dir="/tmp/rlm_test/rlm_control",
+        command_fifo="/tmp/rlm_test/rlm_control/command",
+        response_fifo="/tmp/rlm_test/rlm_control/response",
+        ready_flag="/tmp/rlm_test/rlm_control/ready",
+        worker_path="/tmp/rlm_test/rlm_control/worker.py",
+        worker_pid_file="/tmp/rlm_test/rlm_control/pid",
+        context_file="/tmp/rlm_test/rlm_control/context.json",
+        answer_file="/tmp/rlm_test/rlm_control/answer.json",
+        log_file="/tmp/rlm_test/rlm_control/worker.log",
     )
     upstream = _render_worker_script(paths, repl_language="python")
 
     customized = customize_python_worker_script(upstream)
 
-    assert 'namespace.update(load_runtime_namespace("/workspace/.lab/bootstrap.json"))' in customized
+    assert 'lab_namespace = load_runtime_namespace("/workspace/.lab/bootstrap.json")' in customized
+    assert 'shutil.rmtree("/workspace/.lab")' in customized
+    assert "namespace.update(lab_namespace)" in customized
     assert 'result.update(namespace["_collect_deliverables"]())' in customized

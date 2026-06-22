@@ -119,3 +119,27 @@ def test_runtime_rejects_paths_outside_workspace(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="outside"):
         namespace["read"](Path(os.sep) / "etc" / "hosts")
+
+
+@pytest.mark.parametrize(
+    "reference",
+    [
+        ".rlm_control",
+        ".rlm-control",
+        "/tmp/rlm_1234/rlm_control",
+    ],
+)
+def test_runtime_helpers_reject_control_directory_references(
+    tmp_path: Path,
+    reference: str,
+) -> None:
+    namespace = load_runtime_namespace(
+        write_bootstrap(tmp_path), workspace_root=tmp_path
+    )
+
+    with pytest.raises(PermissionError, match="control directory"):
+        namespace["read"](reference)
+    with pytest.raises(PermissionError, match="control directory"):
+        namespace["write"](reference, "blocked")
+    with pytest.raises(PermissionError, match="control directory"):
+        namespace["bash"](f"ls {reference}")

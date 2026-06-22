@@ -17,7 +17,7 @@ The namespace provides:
 - `llm_batch(prompts)`: call independent, tool-free sub-LLMs in parallel.
 - `answer`: the completion signal dictionary.
 
-`read`, `write`, and `bash` execute inside the sandbox. Sub-LLMs have no tools and cannot see the root conversation, Python variables, `documents`, `skills`, or the sandbox unless you explicitly include the necessary information in each delegated prompt. Each delegated prompt should name the source document, include only the relevant excerpt or intermediate data, state the focused legal question, and request a clear output schema. Do not send the full task corpus blindly or assume hidden shared context.
+`read`, `write`, and `bash` execute inside the sandbox. Work only within `/workspace`: do not read, write, list, inspect, execute, or otherwise access any path outside `/workspace`, whether through these helpers, direct Python filesystem APIs, subprocesses, or shell commands. Sub-LLMs have no tools and cannot see the root conversation, Python variables, `documents`, `skills`, or the sandbox unless you explicitly include the necessary information in each delegated prompt. Each delegated prompt should name the source document, include only the relevant excerpt or intermediate data, state the focused legal question, and request a clear output schema. Do not send the full task corpus blindly or assume hidden shared context.
 
 Use `skills["docx"]` or `skills["xlsx"]` before creating a specialized work product. Skill scripts are available under `/workspace/skills/<skill>/scripts/`.
 

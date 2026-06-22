@@ -33,6 +33,7 @@ def customize_python_worker_script(script: str) -> str:
     script = script.replace(
         IMPORT_ANCHOR,
         IMPORT_ANCHOR
+        + "import shutil\n"
         + 'sys.path.insert(0, "/workspace/.lab")\n'
         + "from lab_runtime import load_runtime_namespace\n",
         1,
@@ -42,7 +43,10 @@ def customize_python_worker_script(script: str) -> str:
         NAMESPACE_ANCHOR,
         '    "answer": answer,\n'
         "}\n"
-        'namespace.update(load_runtime_namespace("/workspace/.lab/bootstrap.json"))\n'
+        'lab_namespace = load_runtime_namespace("/workspace/.lab/bootstrap.json")\n'
+        'shutil.rmtree("/workspace/.lab")\n'
+        "namespace.update(lab_namespace)\n"
+        "del lab_namespace\n"
         "for tool_name in ROOT_TOOL_NAMES:\n",
         1,
     )

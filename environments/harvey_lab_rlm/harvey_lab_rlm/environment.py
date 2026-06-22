@@ -65,7 +65,6 @@ class HarveyLabRLMEnv(RLMEnv):
         state["missing_deliverables"] = list(row["deliverables"])
         state["deliverable_errors"] = {}
         state["rlm_fs_root_remote"] = "/workspace"
-        state["rlm_control_dir_remote"] = "/workspace/.rlm-control"
 
         original_info = state.get("info")
         with tempfile.TemporaryDirectory(prefix="harvey-lab-rlm-") as temp_dir:
