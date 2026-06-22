@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from datasets import Dataset
 import pytest
 from verifiers.envs.experimental.rlm_env import RLMEnv
@@ -114,6 +116,81 @@ async def test_sub_llm_request_is_wrapped_with_task_objective(
     assert "Draft the exact memo." in content
     assert "Review this excerpt." in content
     assert "requested output format" in content
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fail_setup", [False, True])
+async def test_setup_deletes_short_lived_staging_root(
+    monkeypatch: pytest.MonkeyPatch,
+    fail_setup: bool,
+) -> None:
+    env = HarveyLabRLMEnv(
+        dataset_builder=dataset_builder,
+        judge=NoopJudge(),
+        sandbox_docker_image="example.invalid/harvey-lab-rlm:0.1.0",
+    )
+    state = dict(dataset_builder()[0])
+    captured_staging_root: Path | None = None
+
+    def fake_stage(root, row):
+        bootstrap = root / ".lab" / "bootstrap.json"
+        bootstrap.parent.mkdir(parents=True)
+        bootstrap.write_text("{}", encoding="utf-8")
+
+    async def fake_setup(self, state, **kwargs):
+        nonlocal captured_staging_root
+        captured_staging_root = Path(state["info"]["context_dir"])
+        assert captured_staging_root.is_dir()
+        assert (captured_staging_root / ".lab" / "bootstrap.json").is_file()
+        if fail_setup:
+            raise RuntimeError("setup failed")
+
+    monkeypatch.setattr(
+        "harvey_lab_rlm.environment.stage_rollout_context",
+        fake_stage,
+    )
+    monkeypatch.setattr(RLMEnv, "setup_state", fake_setup)
+
+    if fail_setup:
+        with pytest.raises(RuntimeError, match="setup failed"):
+            await env.setup_state(state)
+    else:
+        await env.setup_state(state)
+
+    assert captured_staging_root is not None
+    assert not captured_staging_root.exists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fail_cleanup", [False, True])
+async def test_cleanup_deletes_host_rollout_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fail_cleanup: bool,
+) -> None:
+    env = HarveyLabRLMEnv(
+        dataset_builder=dataset_builder,
+        judge=NoopJudge(),
+        sandbox_docker_image="example.invalid/harvey-lab-rlm:0.1.0",
+    )
+    rollout_dir = tmp_path / "rlm_rollout_test"
+    (rollout_dir / "rlm_fs").mkdir(parents=True)
+    (rollout_dir / "rlm_control").mkdir()
+    state = {"rlm_rollout_dir": str(rollout_dir)}
+
+    async def fake_cleanup(self, state):
+        if fail_cleanup:
+            raise RuntimeError("cleanup failed")
+
+    monkeypatch.setattr(RLMEnv, "cleanup_rlm_state", fake_cleanup)
+
+    if fail_cleanup:
+        with pytest.raises(RuntimeError, match="cleanup failed"):
+            await env.cleanup_rlm_state(state)
+    else:
+        await env.cleanup_rlm_state(state)
+
+    assert not rollout_dir.exists()
 
 
 @pytest.mark.asyncio

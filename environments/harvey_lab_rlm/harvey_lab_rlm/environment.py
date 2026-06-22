@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import os
+import shutil
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
@@ -170,6 +172,15 @@ class HarveyLabRLMEnv(RLMEnv):
             self.logger.exception("Failed to restore LAB bootstrap after timeout")
             return False
         return await super()._recover_from_code_timeout(state)
+
+    @vf.cleanup
+    async def cleanup_rlm_state(self, state: State) -> None:
+        rollout_dir = state.get("rlm_rollout_dir")
+        try:
+            await super().cleanup_rlm_state(state)
+        finally:
+            if rollout_dir:
+                await asyncio.to_thread(shutil.rmtree, rollout_dir, True)
 
     @vf.cleanup(priority=-100)
     async def strip_runtime_paths(self, state: State) -> None:
