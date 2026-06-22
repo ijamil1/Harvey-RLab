@@ -31,7 +31,7 @@ DEEPSEEK_API_KEY=...
 Exported environment variables take precedence over `.env`.
 
 The environment always uses the fixed image
-`docker.io/irfanjamil/harvey-lab-rlm-sandbox:0.1.0`. That image must be
+`docker.io/irfanjamil10/harvey-lab-rlm-sandbox:0.1.0`. That image must be
 available to Prime's sandbox service. Build and push it from the environment
 directory:
 
@@ -39,7 +39,7 @@ directory:
 docker buildx build \
   --platform linux/amd64 \
   -f docker/Dockerfile \
-  -t docker.io/irfanjamil/harvey-lab-rlm-sandbox:0.1.0 \
+  -t docker.io/irfanjamil10/harvey-lab-rlm-sandbox:0.1.0 \
   --push .
 ```
 
