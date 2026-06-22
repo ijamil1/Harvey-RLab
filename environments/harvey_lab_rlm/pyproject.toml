@@ -27,22 +27,12 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["harvey_lab_rlm"]
 
-[tool.hatch.build.targets.wheel.force-include]
-"rlm/skills/docx/RLM_SKILL.md" = "harvey_lab_rlm/resources/skills/docx/RLM_SKILL.md"
-"rlm/skills/docx/scripts" = "harvey_lab_rlm/resources/skills/docx/scripts"
-"rlm/skills/xlsx/RLM_SKILL.md" = "harvey_lab_rlm/resources/skills/xlsx/RLM_SKILL.md"
-"rlm/skills/xlsx/scripts" = "harvey_lab_rlm/resources/skills/xlsx/scripts"
-
 [tool.hatch.build.targets.sdist]
 include = [
     "harvey_lab_rlm",
     "docker",
     "README.md",
     "pyproject.toml",
-    "rlm/skills/docx/RLM_SKILL.md",
-    "rlm/skills/docx/scripts",
-    "rlm/skills/xlsx/RLM_SKILL.md",
-    "rlm/skills/xlsx/scripts",
 ]
 
 [tool.pytest.ini_options]
