@@ -15,7 +15,10 @@ training models on [Harvey's Legal Agent Benchmark](https://huggingface.co/datas
   the context explicitly delegated by the root model.
 - Deliverables must be written to `/workspace/output` using exact dataset
   filenames.
-- Each rollout sandbox has a fixed 12-minute lifetime.
+- Sandbox readiness polling allows about eight minutes for Prime's current
+  provisioning latency.
+- Each rollout sandbox has a fixed 17-minute lifetime, and the outer rollout
+  timeout defaults to 20 minutes.
 - Binary work products are parsed inside the sandbox and deleted with the
   sandbox. Only parsed text and structured errors remain in rollout state.
 - Reward is the fraction of task criteria passed by the configured judge.

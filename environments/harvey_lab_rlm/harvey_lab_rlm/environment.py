@@ -23,6 +23,9 @@ from .worker import customize_python_worker_script
 
 
 SANDBOX_DOCKER_IMAGE = "irfanjamil10/harvey-lab-rlm-sandbox:0.1.0"
+SANDBOX_WAIT_FOR_CREATION_MAX_ATTEMPTS = 240
+SANDBOX_TIMEOUT_MINUTES = 17
+ROLLOUT_TIMEOUT_SECONDS = 20 * 60
 
 
 class HarveyLabRLMEnv(RLMEnv):
@@ -36,6 +39,7 @@ class HarveyLabRLMEnv(RLMEnv):
         sub_model: str | None = None,
         **kwargs: Any,
     ) -> None:
+        kwargs.setdefault("timeout_seconds", ROLLOUT_TIMEOUT_SECONDS)
         rubric = HarveyLabRubric(judge=judge, parallelism=judge_parallelism)
         super().__init__(
             dataset=dataset_builder,
@@ -54,8 +58,11 @@ class HarveyLabRLMEnv(RLMEnv):
             include_sub_llm_in_trajectory=False,
             retain_filesystem_after_rollout=False,
             sandbox_docker_image=SANDBOX_DOCKER_IMAGE,
-            sandbox_timeout_minutes=12,
+            sandbox_timeout_minutes=SANDBOX_TIMEOUT_MINUTES,
             **kwargs,
+        )
+        self._executor.sandbox_wait_for_creation_max_attempts = (
+            SANDBOX_WAIT_FOR_CREATION_MAX_ATTEMPTS
         )
         self.prompt_builder = HarveyLabPromptBuilder()
 

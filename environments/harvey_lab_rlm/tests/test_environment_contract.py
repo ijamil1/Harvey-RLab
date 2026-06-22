@@ -7,7 +7,13 @@ import pytest
 from verifiers.envs.experimental.rlm_env import RLMEnv
 from verifiers.types import UserMessage
 
-from harvey_lab_rlm.environment import HarveyLabRLMEnv, SANDBOX_DOCKER_IMAGE
+from harvey_lab_rlm.environment import (
+    HarveyLabRLMEnv,
+    ROLLOUT_TIMEOUT_SECONDS,
+    SANDBOX_DOCKER_IMAGE,
+    SANDBOX_TIMEOUT_MINUTES,
+    SANDBOX_WAIT_FOR_CREATION_MAX_ATTEMPTS,
+)
 from harvey_lab_rlm.prompts import ROOT_PROMPT, SUB_LLM_SYSTEM_PROMPT
 
 
@@ -49,7 +55,12 @@ def test_environment_exposes_only_python_repl_to_root_model() -> None:
     )
 
     assert env.sandbox_docker_image == SANDBOX_DOCKER_IMAGE
-    assert env.sandbox_timeout_minutes == 12
+    assert env.sandbox_timeout_minutes == SANDBOX_TIMEOUT_MINUTES
+    assert env.timeout_seconds == ROLLOUT_TIMEOUT_SECONDS
+    assert (
+        env._executor.sandbox_wait_for_creation_max_attempts
+        == SANDBOX_WAIT_FOR_CREATION_MAX_ATTEMPTS
+    )
     assert [tool.name for tool in env.tool_defs] == ["call_python_repl"]
     assert env.root_tool_names == ["llm_batch"]
     assert env.sub_tool_names == []
