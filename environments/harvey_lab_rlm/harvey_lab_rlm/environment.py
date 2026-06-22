@@ -22,6 +22,9 @@ from .rubric import HarveyLabRubric
 from .worker import customize_python_worker_script
 
 
+SANDBOX_DOCKER_IMAGE = "docker.io/irfanjamil/harvey-lab-rlm-sandbox:0.1.0"
+
+
 class HarveyLabRLMEnv(RLMEnv):
     def __init__(
         self,
@@ -31,7 +34,6 @@ class HarveyLabRLMEnv(RLMEnv):
         judge_parallelism: int = 6,
         max_turns: int = 200,
         sub_model: str | None = None,
-        sandbox_docker_image: str,
         **kwargs: Any,
     ) -> None:
         rubric = HarveyLabRubric(judge=judge, parallelism=judge_parallelism)
@@ -51,7 +53,7 @@ class HarveyLabRLMEnv(RLMEnv):
             pip_install_packages="",
             include_sub_llm_in_trajectory=False,
             retain_filesystem_after_rollout=False,
-            sandbox_docker_image=sandbox_docker_image,
+            sandbox_docker_image=SANDBOX_DOCKER_IMAGE,
             **kwargs,
         )
         self.prompt_builder = HarveyLabPromptBuilder()
@@ -219,21 +221,12 @@ def load_environment(
     sub_model: str | None = None,
     judge_model: str = "deepseek-v4-flash",
     judge_parallelism: int = 6,
-    sandbox_docker_image: str | None = None,
     *,
     judge: CriterionJudge | None = None,
     **kwargs: Any,
 ) -> vf.Environment:
     _load_project_dotenv()
     vf.ensure_keys(["PRIME_API_KEY", "DEEPSEEK_API_KEY"])
-    image = sandbox_docker_image or os.environ.get(
-        "HARVEY_LAB_RLM_SANDBOX_IMAGE"
-    )
-    if not image:
-        raise ValueError(
-            "Set HARVEY_LAB_RLM_SANDBOX_IMAGE or pass sandbox_docker_image. "
-            "Build the versioned image from docker/Dockerfile first."
-        )
     resolved_judge = judge or DeepSeekCriterionJudge(
         model=judge_model,
         api_key=os.environ["DEEPSEEK_API_KEY"],
@@ -244,6 +237,5 @@ def load_environment(
         judge_parallelism=judge_parallelism,
         max_turns=max_turns,
         sub_model=sub_model,
-        sandbox_docker_image=image,
         **kwargs,
     )

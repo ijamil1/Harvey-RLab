@@ -7,7 +7,7 @@ import pytest
 from verifiers.envs.experimental.rlm_env import RLMEnv
 from verifiers.types import UserMessage
 
-from harvey_lab_rlm.environment import HarveyLabRLMEnv
+from harvey_lab_rlm.environment import HarveyLabRLMEnv, SANDBOX_DOCKER_IMAGE
 from harvey_lab_rlm.prompts import ROOT_PROMPT, SUB_LLM_SYSTEM_PROMPT
 
 
@@ -46,9 +46,9 @@ def test_environment_exposes_only_python_repl_to_root_model() -> None:
     env = HarveyLabRLMEnv(
         dataset_builder=dataset_builder,
         judge=NoopJudge(),
-        sandbox_docker_image="example.invalid/harvey-lab-rlm:0.1.0",
     )
 
+    assert env.sandbox_docker_image == SANDBOX_DOCKER_IMAGE
     assert [tool.name for tool in env.tool_defs] == ["call_python_repl"]
     assert env.root_tool_names == ["llm_batch"]
     assert env.sub_tool_names == []
@@ -65,7 +65,6 @@ async def test_ready_result_is_copied_to_state(
     env = HarveyLabRLMEnv(
         dataset_builder=dataset_builder,
         judge=NoopJudge(),
-        sandbox_docker_image="example.invalid/harvey-lab-rlm:0.1.0",
     )
 
     async def fake_execute(self, code, state):
@@ -93,7 +92,6 @@ async def test_sub_llm_request_is_wrapped_with_task_objective(
     env = HarveyLabRLMEnv(
         dataset_builder=dataset_builder,
         judge=NoopJudge(),
-        sandbox_docker_image="example.invalid/harvey-lab-rlm:0.1.0",
     )
     captured = {}
 
@@ -127,7 +125,6 @@ async def test_setup_deletes_short_lived_staging_root(
     env = HarveyLabRLMEnv(
         dataset_builder=dataset_builder,
         judge=NoopJudge(),
-        sandbox_docker_image="example.invalid/harvey-lab-rlm:0.1.0",
     )
     state = dict(dataset_builder()[0])
     captured_staging_root: Path | None = None
@@ -171,7 +168,6 @@ async def test_cleanup_deletes_host_rollout_directory(
     env = HarveyLabRLMEnv(
         dataset_builder=dataset_builder,
         judge=NoopJudge(),
-        sandbox_docker_image="example.invalid/harvey-lab-rlm:0.1.0",
     )
     rollout_dir = tmp_path / "rlm_rollout_test"
     (rollout_dir / "rlm_fs").mkdir(parents=True)
@@ -198,7 +194,6 @@ async def test_cleanup_strips_runtime_paths_but_keeps_scoring_text() -> None:
     env = HarveyLabRLMEnv(
         dataset_builder=dataset_builder,
         judge=NoopJudge(),
-        sandbox_docker_image="example.invalid/harvey-lab-rlm:0.1.0",
     )
     state = {
         "rlm_rollout_dir": "/tmp/private",

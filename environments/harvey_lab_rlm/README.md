@@ -26,19 +26,20 @@ Copy `.env.example` to `.env` and set:
 ```dotenv
 PRIME_API_KEY=...
 DEEPSEEK_API_KEY=...
-HARVEY_LAB_RLM_SANDBOX_IMAGE=registry.example.com/harvey-lab-rlm-sandbox:0.1.0
 ```
 
 Exported environment variables take precedence over `.env`.
 
-The sandbox image must be available to Prime's sandbox service. Build and push
-an immutable versioned image from the environment directory:
+The environment always uses the fixed image
+`docker.io/irfanjamil/harvey-lab-rlm-sandbox:0.1.0`. That image must be
+available to Prime's sandbox service. Build and push it from the environment
+directory:
 
 ```bash
 docker buildx build \
   --platform linux/amd64 \
   -f docker/Dockerfile \
-  -t registry.example.com/harvey-lab-rlm-sandbox:0.1.0 \
+  -t docker.io/irfanjamil/harvey-lab-rlm-sandbox:0.1.0 \
   --push .
 ```
 
@@ -91,7 +92,6 @@ so use a direct Hub-slug command for platform acceptance.
 | `sub_model` | root model | Model used by `llm_batch` |
 | `judge_model` | `deepseek-v4-flash` | Criterion judge model |
 | `judge_parallelism` | `6` | Maximum concurrent criterion calls |
-| `sandbox_docker_image` | environment variable | Versioned authoring image |
 
 ## Rollout fields and metrics
 
@@ -111,4 +111,3 @@ Main metrics:
 - `lab_missing_deliverables`
 - `lab_deliverable_errors`
 - `lab_judge_calls`
-
