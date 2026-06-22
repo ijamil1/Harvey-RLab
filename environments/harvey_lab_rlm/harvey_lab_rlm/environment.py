@@ -60,7 +60,12 @@ class HarveyLabRLMEnv(RLMEnv):
         self.prompt_builder = HarveyLabPromptBuilder()
 
     async def setup_state(self, state: State, **kwargs: Any) -> None:
-        source = {field: state.get(field) for field in LAB_FIELDS}
+        original_info = state.get("info")
+        metadata = original_info if isinstance(original_info, dict) else {}
+        source = {
+            field: metadata.get(field, state.get(field))
+            for field in LAB_FIELDS
+        }
         row = normalize_lab_row(source)
         for key, value in row.items():
             if key != "prompt":
@@ -71,7 +76,6 @@ class HarveyLabRLMEnv(RLMEnv):
         state["deliverable_errors"] = {}
         state["rlm_fs_root_remote"] = "/workspace"
 
-        original_info = state.get("info")
         with tempfile.TemporaryDirectory(prefix="harvey-lab-rlm-") as temp_dir:
             staging_root = Path(temp_dir)
             stage_rollout_context(staging_root, row)

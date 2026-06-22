@@ -127,7 +127,11 @@ async def test_setup_deletes_short_lived_staging_root(
         dataset_builder=dataset_builder,
         judge=NoopJudge(),
     )
-    state = dict(dataset_builder()[0])
+    dataset_row = dict(dataset_builder()[0])
+    state = {
+        "prompt": dataset_row.pop("prompt"),
+        "info": dataset_row,
+    }
     captured_staging_root: Path | None = None
 
     def fake_stage(root, row):

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 
+from datasets import Dataset
 import pytest
 
-from harvey_lab_rlm.dataset import normalize_lab_row
+from harvey_lab_rlm.dataset import make_dataset_builder, normalize_lab_row
 
 
 def valid_row() -> dict:
@@ -48,6 +49,26 @@ def test_normalize_row_decodes_json_fields() -> None:
 
     assert isinstance(row["criteria"], list)
     assert isinstance(row["documents"], dict)
+
+
+def test_dataset_builder_places_lab_metadata_in_rollout_info(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = valid_row()
+    monkeypatch.setattr(
+        "harvey_lab_rlm.dataset._load_json_metadata_compatible_dataset",
+        lambda dataset_name, split: Dataset.from_list([source]),
+    )
+
+    row = make_dataset_builder("test/dataset", "train")()[0]
+    info = json.loads(row["info"])
+
+    assert row["prompt"] == [
+        {"role": "user", "content": source["instructions"]}
+    ]
+    assert info["instructions"] == source["instructions"]
+    assert info["criteria"] == source["criteria"]
+    assert info["documents"] == source["documents"]
 
 
 @pytest.mark.parametrize(

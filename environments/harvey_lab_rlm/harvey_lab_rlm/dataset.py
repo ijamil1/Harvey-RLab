@@ -129,7 +129,12 @@ def make_dataset_builder(
                         "role": "user",
                         "content": str(row["instructions"]).strip(),
                     }
-                ]
+                ],
+                "info": json.dumps(
+                    {field: row.get(field) for field in LAB_FIELDS},
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ),
             },
             desc="Building Harvey LAB prompts",
         )
