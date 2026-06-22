@@ -15,6 +15,7 @@ training models on [Harvey's Legal Agent Benchmark](https://huggingface.co/datas
   the context explicitly delegated by the root model.
 - Deliverables must be written to `/workspace/output` using exact dataset
   filenames.
+- Each rollout sandbox has a fixed 12-minute lifetime.
 - Binary work products are parsed inside the sandbox and deleted with the
   sandbox. Only parsed text and structured errors remain in rollout state.
 - Reward is the fraction of task criteria passed by the configured judge.
@@ -31,7 +32,7 @@ DEEPSEEK_API_KEY=...
 Exported environment variables take precedence over `.env`.
 
 The environment always uses the fixed image
-`docker.io/irfanjamil10/harvey-lab-rlm-sandbox:0.1.0`. That image must be
+`irfanjamil10/harvey-lab-rlm-sandbox:0.1.0`. That image must be
 available to Prime's sandbox service. Build and push it from the environment
 directory:
 
@@ -39,7 +40,7 @@ directory:
 docker buildx build \
   --platform linux/amd64 \
   -f docker/Dockerfile \
-  -t docker.io/irfanjamil10/harvey-lab-rlm-sandbox:0.1.0 \
+  -t irfanjamil10/harvey-lab-rlm-sandbox:0.1.0 \
   --push .
 ```
 

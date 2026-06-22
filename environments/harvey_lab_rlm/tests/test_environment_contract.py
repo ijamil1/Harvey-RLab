@@ -49,6 +49,7 @@ def test_environment_exposes_only_python_repl_to_root_model() -> None:
     )
 
     assert env.sandbox_docker_image == SANDBOX_DOCKER_IMAGE
+    assert env.sandbox_timeout_minutes == 12
     assert [tool.name for tool in env.tool_defs] == ["call_python_repl"]
     assert env.root_tool_names == ["llm_batch"]
     assert env.sub_tool_names == []

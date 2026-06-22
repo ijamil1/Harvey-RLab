@@ -22,7 +22,7 @@ from .rubric import HarveyLabRubric
 from .worker import customize_python_worker_script
 
 
-SANDBOX_DOCKER_IMAGE = "docker.io/irfanjamil10/harvey-lab-rlm-sandbox:0.1.0"
+SANDBOX_DOCKER_IMAGE = "irfanjamil10/harvey-lab-rlm-sandbox:0.1.0"
 
 
 class HarveyLabRLMEnv(RLMEnv):
@@ -54,6 +54,7 @@ class HarveyLabRLMEnv(RLMEnv):
             include_sub_llm_in_trajectory=False,
             retain_filesystem_after_rollout=False,
             sandbox_docker_image=SANDBOX_DOCKER_IMAGE,
+            sandbox_timeout_minutes=12,
             **kwargs,
         )
         self.prompt_builder = HarveyLabPromptBuilder()
