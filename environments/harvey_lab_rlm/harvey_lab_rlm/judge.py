@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 import re
 from collections.abc import Mapping
 from typing import Any, Protocol
 
 from openai import AsyncOpenAI
-
-logger = logging.getLogger(__name__)
 
 
 class CriterionJudge(Protocol):
@@ -70,22 +67,17 @@ class DeepSeekCriterionJudge:
                     response_format={"type": "json_object"},
                 )
                 text = response.choices[0].message.content or ""
+                finish_reason = getattr(response.choices[0], "finish_reason", None)
                 try:
                     result = self._parse_result(text)
-                except ValueError:
-                    logger.warning(
-                        "Failed to parse judge response as JSON "
-                        "(model=%s, attempt=%d/%d, criterion_id=%s, "
-                        "criterion_title=%r, response_chars=%d): %r",
-                        self.model,
-                        attempt + 1,
-                        self.max_attempts,
-                        criterion.get("id"),
-                        criterion.get("title"),
-                        len(text),
-                        text,
-                    )
-                    raise
+                except ValueError as exc:
+                    raise self._diagnostic_parse_error(
+                        exc,
+                        text=text,
+                        finish_reason=finish_reason,
+                        criterion=criterion,
+                        attempt=attempt + 1,
+                    ) from exc
                 return result
             except Exception as exc:
                 last_error = exc
@@ -114,3 +106,27 @@ class DeepSeekCriterionJudge:
         if not isinstance(reasoning, str) or not reasoning.strip():
             raise ValueError("judge reasoning must be a non-empty string")
         return {"verdict": verdict, "reasoning": reasoning.strip()}
+
+    def _diagnostic_parse_error(
+        self,
+        exc: ValueError,
+        *,
+        text: str,
+        finish_reason: str | None,
+        criterion: Mapping[str, Any],
+        attempt: int,
+    ) -> ValueError:
+        raw_response_limit = 4000
+        raw_response = text[:raw_response_limit]
+        truncated = len(text) > raw_response_limit
+        return ValueError(
+            f"{exc} "
+            f"(model={self.model!r}, "
+            f"attempt={attempt}/{self.max_attempts}, "
+            f"criterion_id={criterion.get('id')!r}, "
+            f"criterion_title={criterion.get('title')!r}, "
+            f"finish_reason={finish_reason!r}, "
+            f"response_chars={len(text)}, "
+            f"raw_response_truncated={truncated}, "
+            f"raw_response={raw_response!r})"
+        )
