@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
 from collections.abc import Mapping
 from typing import Any, Protocol
 
 from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
 
 
 class CriterionJudge(Protocol):
@@ -67,7 +70,22 @@ class DeepSeekCriterionJudge:
                     response_format={"type": "json_object"},
                 )
                 text = response.choices[0].message.content or ""
-                result = self._parse_result(text)
+                try:
+                    result = self._parse_result(text)
+                except ValueError:
+                    logger.warning(
+                        "Failed to parse judge response as JSON "
+                        "(model=%s, attempt=%d/%d, criterion_id=%s, "
+                        "criterion_title=%r, response_chars=%d): %r",
+                        self.model,
+                        attempt + 1,
+                        self.max_attempts,
+                        criterion.get("id"),
+                        criterion.get("title"),
+                        len(text),
+                        text,
+                    )
+                    raise
                 return result
             except Exception as exc:
                 last_error = exc
