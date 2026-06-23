@@ -1,0 +1,6 @@
+[[endpoint]]
+endpoint_id = "deepseek-v4-pro"
+model = "deepseek-v4-pro"
+url = "https://api.deepseek.com"
+key = "DEEPSEEK_API_KEY"
+api_client_type = "openai_chat_completions"

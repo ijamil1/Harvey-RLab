@@ -98,6 +98,22 @@ async def test_ready_result_is_copied_to_state(
 
 
 @pytest.mark.asyncio
+async def test_message_history_upload_is_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    env = HarveyLabRLMEnv(
+        dataset_builder=dataset_builder,
+        judge=NoopJudge(),
+    )
+
+    async def fail_upload(self, state):
+        raise AssertionError("parent message history upload should not run")
+
+    monkeypatch.setattr(RLMEnv, "_upload_message_history", fail_upload)
+    await env._upload_message_history({"_observable_messages": [UserMessage(content="hi")]})
+
+
+@pytest.mark.asyncio
 async def test_sub_llm_request_is_wrapped_with_task_objective(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -100,6 +100,9 @@ class HarveyLabRLMEnv(RLMEnv):
     def customize_worker_script(self, script: str, state: State) -> str:
         return customize_python_worker_script(script)
 
+    async def _upload_message_history(self, state: State) -> None:
+        return None
+
     async def _execute_code(self, code: str, state: State) -> dict[str, Any]:
         result = await super()._execute_code(code, state)
         answer = result.get("answer")
