@@ -94,3 +94,9 @@ class HarveyLabRubric(vf.Rubric):
             "lab_deliverable_errors": float(len(deliverable_errors)),
             "lab_judge_calls": float(judge_call_count),
         }
+
+    async def score_group(
+        self,
+        states: list[vf.State | dict[str, Any]],
+    ) -> None:
+        await asyncio.gather(*(self.score_rollout(state) for state in states))

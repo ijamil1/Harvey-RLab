@@ -85,6 +85,22 @@ async def test_partial_credit_and_deliverable_scoping() -> None:
 
 
 @pytest.mark.asyncio
+async def test_group_scoring_runs_criterion_judge_for_each_rollout() -> None:
+    judge = FakeJudge({"C-001": "pass", "C-002": "fail", "C-003": "pass"})
+    rubric = HarveyLabRubric(judge=judge, parallelism=2)
+    states = [state_fixture(), state_fixture()]
+
+    await rubric.score_group(states)
+
+    assert [state["reward"] for state in states] == [
+        pytest.approx(2 / 3),
+        pytest.approx(2 / 3),
+    ]
+    assert all(len(state["criterion_results"]) == 3 for state in states)
+    assert len(judge.calls) == 6
+
+
+@pytest.mark.asyncio
 async def test_missing_deliverable_auto_fails_without_judge_call() -> None:
     judge = FakeJudge({"C-001": "pass", "C-002": "pass", "C-003": "pass"})
     rubric = HarveyLabRubric(judge=judge, parallelism=3)
