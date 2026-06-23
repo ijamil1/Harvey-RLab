@@ -4,6 +4,7 @@ import asyncio
 import os
 import shutil
 import tempfile
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,21 @@ SANDBOX_DOCKER_IMAGE = "irfanjamil10/harvey-lab-rlm-sandbox:0.1.0"
 SANDBOX_WAIT_FOR_CREATION_MAX_ATTEMPTS = 240
 SANDBOX_TIMEOUT_MINUTES = 17
 ROLLOUT_TIMEOUT_SECONDS = 20 * 60
+
+
+class HarveyLabTimingRubric(vf.Rubric):
+    def __init__(self) -> None:
+        super().__init__()
+        self.add_metric(self.lab_rollout_duration_seconds)
+        self.add_metric(self.lab_sandbox_lifetime_seconds)
+
+    async def lab_rollout_duration_seconds(self, state: State) -> float:
+        timing = state.get("timing")
+        generation = getattr(timing, "generation", None)
+        return float(getattr(generation, "duration", 0.0) or 0.0)
+
+    async def lab_sandbox_lifetime_seconds(self, state: State) -> float:
+        return float(state.get("lab_sandbox_lifetime_seconds", 0.0) or 0.0)
 
 
 class HarveyLabRLMEnv(RLMEnv):
@@ -65,6 +81,7 @@ class HarveyLabRLMEnv(RLMEnv):
             SANDBOX_WAIT_FOR_CREATION_MAX_ATTEMPTS
         )
         self.prompt_builder = HarveyLabPromptBuilder()
+        self.add_rubric(HarveyLabTimingRubric())
 
     async def setup_state(self, state: State, **kwargs: Any) -> None:
         original_info = state.get("info")
@@ -89,6 +106,7 @@ class HarveyLabRLMEnv(RLMEnv):
             info = dict(original_info) if isinstance(original_info, dict) else {}
             info["context_dir"] = str(staging_root)
             state["info"] = info
+            state["lab_sandbox_lifetime_start_time"] = time.time()
             try:
                 await super().setup_state(state, **kwargs)
             finally:
@@ -198,6 +216,9 @@ class HarveyLabRLMEnv(RLMEnv):
         finally:
             if rollout_dir:
                 await asyncio.to_thread(shutil.rmtree, rollout_dir, True)
+            started_at = state.get("lab_sandbox_lifetime_start_time")
+            if isinstance(started_at, (int, float)):
+                state["lab_sandbox_lifetime_seconds"] = time.time() - float(started_at)
 
     @vf.cleanup(priority=-100)
     async def strip_runtime_paths(self, state: State) -> None:
@@ -215,6 +236,7 @@ class HarveyLabRLMEnv(RLMEnv):
             "sandbox_state",
             "interception_url",
             "root_tool_url",
+            "lab_sandbox_lifetime_start_time",
         ):
             state.pop(key, None)
 
