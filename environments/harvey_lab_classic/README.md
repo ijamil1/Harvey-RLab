@@ -45,7 +45,7 @@ Notes:
 
 ### Secrets
 
-`PRIME_API_KEY` and `DEEPSEEK_API_KEY` may be exported in the shell, or placed in a local `.env` file at the workspace root or `environments/harvey_lab_classic/.env`. Exported environment variables take precedence over `.env` values.
+`PRIME_API_KEY` and `DEEPSEEK_API_KEY` may be exported in the shell, or placed in a `.env` file in the current working directory used to launch Python. Exported environment variables take precedence over `.env` values.
 
 ### Metrics
 | Metric | Meaning |

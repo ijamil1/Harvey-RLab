@@ -25,14 +25,14 @@ training models on [Harvey's Legal Agent Benchmark](https://huggingface.co/datas
 
 ## Required configuration
 
-Copy `.env.example` to `.env` and set:
+Create a `.env` file in the current working directory used to launch Python and set:
 
 ```dotenv
 PRIME_API_KEY=...
 DEEPSEEK_API_KEY=...
 ```
 
-Exported environment variables take precedence over `.env`.
+Exported environment variables take precedence over `.env` values.
 
 The environment always uses the fixed image
 `irfanjamil10/harvey-lab-rlm-sandbox:0.1.0`. That image must be

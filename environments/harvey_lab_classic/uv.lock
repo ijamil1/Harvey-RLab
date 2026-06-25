@@ -803,13 +803,14 @@ wheels = [
 
 [[package]]
 name = "harvey-lab-classic"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "datasets" },
     { name = "huggingface-hub" },
     { name = "openai" },
     { name = "pyarrow" },
+    { name = "python-dotenv" },
     { name = "verifiers" },
 ]
 
@@ -825,6 +826,7 @@ requires-dist = [
     { name = "huggingface-hub", specifier = ">=0.30,<2" },
     { name = "openai", specifier = ">=2.0,<3" },
     { name = "pyarrow", specifier = ">=18,<22" },
+    { name = "python-dotenv", specifier = ">=1.0,<2" },
     { name = "verifiers", specifier = "==0.1.14" },
 ]
 

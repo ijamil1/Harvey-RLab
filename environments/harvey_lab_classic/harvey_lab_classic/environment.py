@@ -182,13 +182,9 @@ class HarveyLabClassicHarness(vf.Harness):
 
 
 def _load_project_dotenv() -> None:
-    candidates = [
-        Path.cwd() / ".env",
-        Path(__file__).resolve().parents[1] / ".env",
-    ]
-    for path in candidates:
-        if path.is_file():
-            load_dotenv(path, override=False)
+    dotenv_path = Path.cwd() / ".env"
+    if dotenv_path.is_file():
+        load_dotenv(dotenv_path, override=False)
 
 
 def load_environment(
