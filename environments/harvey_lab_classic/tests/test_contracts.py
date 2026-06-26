@@ -64,6 +64,9 @@ def test_system_prompt_lists_skill_paths_without_inlining_manuals() -> None:
 
     assert "/workspace/skills/docx/SKILL.md" in prompt
     assert "/workspace/skills/xlsx/SKILL.md" in prompt
+    assert "Tool contract:" not in prompt
+    assert "generating tracked-changes redlines" in prompt
+    assert "scanning for #REF!/#DIV/0!/#VALUE! errors" in prompt
     assert "Run-merging gotcha" not in prompt
     assert "Banker conventions" not in prompt
 

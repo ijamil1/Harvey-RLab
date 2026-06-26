@@ -47,7 +47,16 @@ def _metric(state: dict[str, Any], key: str) -> None:
 
 
 async def bash(command: str, sandbox: Any, state: dict[str, Any]) -> str:
-    """Execute a bash command inside the Prime sandbox workspace."""
+    """Execute a bash command and return its output.
+
+    Use for running scripts, file manipulation, and sandbox-local shell
+    operations. Each command runs from /workspace; filesystem changes persist
+    between calls, but shell process state such as cd or exported variables does
+    not.
+
+    Args:
+        command: The bash command to execute.
+    """
     _metric(state, "bash_commands")
     return await _call_tool_server(
         sandbox,
@@ -64,7 +73,21 @@ async def read(
     offset: int | None = None,
     limit: int | None = None,
 ) -> str:
-    """Read a workspace file, parsing generated docx/xlsx files when needed."""
+    """Read a file from the task documents, output directory, or workspace.
+
+    Relative paths are resolved by checking /workspace, then
+    /workspace/documents, then /workspace/output; if the file does not already
+    exist, the path defaults to /workspace/documents. Source task documents are
+    text-backed files. Generated .docx and .xlsx files are parsed automatically.
+    Use offset and limit for large files.
+
+    Args:
+        file_path: Relative path (resolved against /workspace,
+            /workspace/documents, then /workspace/output) or an absolute path
+            under /workspace.
+        offset: Line number to start reading from (0-based). Optional.
+        limit: Maximum number of lines to return. Optional.
+    """
     _metric(state, "read_calls")
     return await _call_tool_server(
         sandbox,
@@ -80,7 +103,20 @@ async def read(
 
 
 async def write(file_path: str, content: str, sandbox: Any, state: dict[str, Any]) -> str:
-    """Write plain text under /workspace/output."""
+    """Write a plain-text scratch or output file under /workspace.
+
+    Relative paths are resolved under /workspace. Use output/<filename> or an
+    absolute /workspace/output/<filename> path for final deliverables that must
+    be collected for scoring. For Office deliverables (.docx or .xlsx), use the
+    file-type skill manuals; do not write raw text to a binary extension.
+    Writing to task documents, skill files, or hidden lab files is denied.
+    Creates parent directories if needed.
+
+    Args:
+        file_path: Relative path under /workspace (e.g., 'scratch.md' or
+            'output/response.md') or an absolute path under /workspace.
+        content: Plain-text content to write.
+    """
     _metric(state, "files_written")
     return await _call_tool_server(
         sandbox,
@@ -98,7 +134,20 @@ async def edit(
     state: dict[str, Any],
     replace_all: bool = False,
 ) -> str:
-    """Replace exact text in a writable workspace file."""
+    """Perform exact string replacement in a file you have already created or read.
+
+    Relative paths resolve like read paths, but edits are denied for read-only
+    task documents under /workspace/documents and skill files under
+    /workspace/skills. The old_string must appear exactly once unless
+    replace_all is true. Use for incremental refinement, not first-time writes.
+
+    Args:
+        file_path: Path to a writable file under /workspace; read-only task
+            documents and skill files cannot be edited.
+        old_string: The exact text to find and replace.
+        new_string: The replacement text.
+        replace_all: If true, replace all occurrences. Default false.
+    """
     _metric(state, "files_edited")
     return await _call_tool_server(
         sandbox,
@@ -120,7 +169,16 @@ async def glob(
     state: dict[str, Any],
     path: str | None = None,
 ) -> str:
-    """Find files inside /workspace using a glob pattern."""
+    """Find files matching a glob pattern, sorted by modification time.
+
+    Defaults to searching /workspace/documents. If path is provided, it resolves
+    like a read path and may point to another directory under /workspace. Prefer
+    this over `bash find` or `bash ls` for file discovery.
+
+    Args:
+        pattern: Glob pattern to match (e.g., '**/*.docx', 'src/**/*.py').
+        path: Directory to search in. Defaults to /workspace/documents.
+    """
     _metric(state, "glob_searches")
     return await _call_tool_server(
         sandbox,
@@ -138,7 +196,20 @@ async def grep(
     glob: str | None = None,
     output_mode: str = "files_with_matches",
 ) -> str:
-    """Search file contents inside /workspace with a regex pattern."""
+    """Search file contents using regex patterns.
+
+    Defaults to searching /workspace/documents. If path is provided, it resolves
+    like a read path and may point to a file or directory under /workspace.
+    Returns matching file paths, matching lines, or match counts.
+
+    Args:
+        pattern: Regex pattern to search for.
+        path: File or directory to search in. Defaults to /workspace/documents.
+        glob: Glob pattern to filter files (e.g., '*.py', '*.docx').
+        output_mode: Output format. 'content' shows matching lines,
+            'files_with_matches' shows file paths, 'count' shows match counts.
+            Default: 'files_with_matches'.
+    """
     _metric(state, "grep_searches")
     return await _call_tool_server(
         sandbox,

@@ -83,10 +83,13 @@ def _resolve_write_path(path: str) -> Path:
     raw = Path(path)
     if raw.is_absolute():
         resolved = _workspace_path(path)
-        if not _is_under(resolved, OUTPUT):
-            raise PermissionError("write tool may only write under /workspace/output")
-        return resolved
-    return (OUTPUT / raw).resolve(strict=False)
+    else:
+        resolved = (WORKSPACE / raw).resolve(strict=False)
+    if not _is_under(resolved, WORKSPACE):
+        raise PermissionError("write tool may only write under /workspace")
+    if _is_under(resolved, DOCUMENTS) or _is_under(resolved, SKILLS) or _is_under(resolved, LAB):
+        raise PermissionError("write denied for read-only task, skill, or lab files")
+    return resolved
 
 
 def _resolve_edit_path(path: str) -> Path:
@@ -150,8 +153,6 @@ def write(payload: dict[str, Any]) -> str:
     path = _resolve_write_path(str(payload.get("file_path", "")))
     if path.suffix.lower() in SUPPORTED_PARSE_SUFFIXES:
         return "Error: write only creates plain text files; use the skill scripts for Office deliverables"
-    if not _is_under(path, OUTPUT):
-        raise PermissionError("write tool may only write under /workspace/output")
     text = "" if payload.get("content") is None else str(payload.get("content"))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
