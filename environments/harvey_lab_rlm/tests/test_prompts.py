@@ -46,16 +46,17 @@ def test_root_prompt_matches_runtime_contract() -> None:
         assert text not in ROOT_PROMPT
 
 
-def test_sub_llm_system_prompt_is_explicitly_stateless_and_tool_free() -> None:
+def test_sub_llm_system_prompt_is_focused_and_output_constrained() -> None:
     for text in [
+        "focused",
         "stateless",
-        "no tools",
-        "no REPL",
-        "no filesystem",
-        "no persistent memory",
-        "cannot inspect `documents`",
-        "cannot invoke skills",
-        "cannot create deliverables",
+        "Analyze the task objective",
+        "excerpts",
+        "intermediate data",
+        "supplied in the user message",
+        "Return only the requested output format",
+        "concise JSON",
+        "`analysis` and `evidence`",
     ]:
         assert text in SUB_LLM_SYSTEM_PROMPT
 

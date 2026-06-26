@@ -3,7 +3,7 @@ name = "harvey-lab-rlm"
 description = "A Verifiers-compatible recursive language model environment for Harvey's Legal Agent Benchmark."
 readme = "README.md"
 tags = ["legal", "rlm", "multi-turn", "train", "eval"]
-version = "0.1.2"
+version = "0.1.3"
 requires-python = ">=3.10"
 dependencies = [
     "datasets>=4.0,<5",
