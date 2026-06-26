@@ -51,18 +51,26 @@ class HarveyLabScorer:
             sections = [f"## {name}\n{deliverables[name]}" for name in required]
             async with semaphore:
                 judge_call_count += 1
-                result = await self.judge.evaluate(
-                    task_title=str(state.get("title", "")),
-                    task_instructions=str(state.get("instructions", "")),
-                    criterion=criterion,
-                    agent_output="\n\n".join(sections),
-                )
-            verdict = str(result.get("verdict", "")).lower()
-            reasoning = result.get("reasoning")
-            if verdict not in {"pass", "fail"}:
-                raise ValueError(f"invalid judge verdict: {verdict!r}")
-            if not isinstance(reasoning, str) or not reasoning.strip():
-                raise ValueError("judge reasoning must be a non-empty string")
+                try:
+                    result = await self.judge.evaluate(
+                        task_title=str(state.get("title", "")),
+                        task_instructions=str(state.get("instructions", "")),
+                        criterion=criterion,
+                        agent_output="\n\n".join(sections),
+                    )
+                    verdict = str(result.get("verdict", "")).lower()
+                    reasoning = result.get("reasoning")
+                    if verdict not in {"pass", "fail"}:
+                        raise ValueError(f"invalid judge verdict: {verdict!r}")
+                    if not isinstance(reasoning, str) or not reasoning.strip():
+                        raise ValueError("judge reasoning must be a non-empty string")
+                except Exception as exc:
+                    return {
+                        "id": str(criterion["id"]),
+                        "title": str(criterion["title"]),
+                        "verdict": "skipped",
+                        "reasoning": f"Judge failed for this criterion: {exc}",
+                    }
             return {
                 "id": str(criterion["id"]),
                 "title": str(criterion["title"]),
@@ -72,8 +80,9 @@ class HarveyLabScorer:
 
         results = await asyncio.gather(*(score_one(c) for c in criteria))
         passed = sum(result["verdict"] == "pass" for result in results)
-        total = len(results)
-        reward = passed / total
+        skipped = sum(result["verdict"] == "skipped" for result in results)
+        total = len(results) - skipped
+        reward = passed / total if total else 0.0
         missing = state.get("missing_deliverables")
         missing_count = len(missing) if isinstance(missing, list) else 0
 
@@ -81,8 +90,11 @@ class HarveyLabScorer:
         state["lab_metrics"] = {
             "lab_criteria_passed": float(passed),
             "lab_criteria_total": float(total),
+            "lab_criteria_original_total": float(len(results)),
+            "lab_criteria_skipped": float(skipped),
+            "lab_judge_errors": float(skipped),
             "lab_criterion_pass_rate": float(reward),
-            "lab_all_pass": float(passed == total),
+            "lab_all_pass": float(total > 0 and skipped == 0 and passed == total),
             "lab_missing_deliverables": float(missing_count),
             "lab_deliverable_errors": float(len(deliverable_errors)),
             "lab_judge_calls": float(judge_call_count),

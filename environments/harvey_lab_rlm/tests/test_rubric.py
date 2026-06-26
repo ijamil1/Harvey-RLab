@@ -8,9 +8,16 @@ from harvey_lab_rlm.rubric import HarveyLabRubric
 
 
 class FakeJudge:
-    def __init__(self, verdicts: dict[str, str], *, fail: bool = False):
+    def __init__(
+        self,
+        verdicts: dict[str, str],
+        *,
+        fail: bool = False,
+        fail_ids: set[str] | None = None,
+    ):
         self.verdicts = verdicts
         self.fail = fail
+        self.fail_ids = fail_ids or set()
         self.calls: list[dict] = []
         self.active = 0
         self.max_active = 0
@@ -19,11 +26,13 @@ class FakeJudge:
         if self.fail:
             raise RuntimeError("judge unavailable")
         self.calls.append(kwargs)
+        criterion_id = kwargs["criterion"]["id"]
+        if criterion_id in self.fail_ids:
+            raise RuntimeError(f"judge unavailable for {criterion_id}")
         self.active += 1
         self.max_active = max(self.max_active, self.active)
         await asyncio.sleep(0.01)
         self.active -= 1
-        criterion_id = kwargs["criterion"]["id"]
         return {
             "verdict": self.verdicts[criterion_id],
             "reasoning": f"Reason for {criterion_id}",
@@ -76,6 +85,8 @@ async def test_partial_credit_and_deliverable_scoping() -> None:
     ]
     assert state["metrics"]["lab_criteria_passed"] == 2.0
     assert state["metrics"]["lab_criteria_total"] == 3.0
+    assert state["metrics"]["lab_criteria_original_total"] == 3.0
+    assert state["metrics"]["lab_criteria_skipped"] == 0.0
     assert state["metrics"]["lab_all_pass"] == 0.0
     assert judge.max_active <= 2
     assert "schedule.xlsx" not in judge.calls[0]["agent_output"]
@@ -117,8 +128,25 @@ async def test_missing_deliverable_auto_fails_without_judge_call() -> None:
 
 
 @pytest.mark.asyncio
-async def test_judge_infrastructure_error_propagates() -> None:
-    rubric = HarveyLabRubric(judge=FakeJudge({}, fail=True), parallelism=2)
+async def test_judge_infrastructure_error_skips_criterion() -> None:
+    judge = FakeJudge(
+        {"C-001": "pass", "C-003": "fail"},
+        fail_ids={"C-002"},
+    )
+    rubric = HarveyLabRubric(judge=judge, parallelism=2)
+    state = state_fixture()
 
-    with pytest.raises(RuntimeError, match="judge unavailable"):
-        await rubric.score_rollout(state_fixture())
+    await rubric.score_rollout(state)
+
+    assert state["reward"] == pytest.approx(1 / 2)
+    assert [result["verdict"] for result in state["criterion_results"]] == [
+        "pass",
+        "skipped",
+        "fail",
+    ]
+    assert "judge unavailable for C-002" in state["criterion_results"][1]["reasoning"]
+    assert state["metrics"]["lab_criteria_passed"] == 1.0
+    assert state["metrics"]["lab_criteria_total"] == 2.0
+    assert state["metrics"]["lab_criteria_original_total"] == 3.0
+    assert state["metrics"]["lab_criteria_skipped"] == 1.0
+    assert state["metrics"]["lab_judge_errors"] == 1.0

@@ -146,6 +146,15 @@ class PassingJudge:
         return {"verdict": "pass", "reasoning": "sufficient"}
 
 
+class SelectiveFailingJudge:
+    async def evaluate(self, **kwargs):
+        criterion_id = kwargs["criterion"]["id"]
+        if criterion_id == "c2":
+            raise RuntimeError("judge unavailable for c2")
+        verdict = "fail" if criterion_id == "c3" else "pass"
+        return {"verdict": verdict, "reasoning": f"reason for {criterion_id}"}
+
+
 @pytest.mark.asyncio
 async def test_scorer_matches_missing_deliverable_auto_fail_contract() -> None:
     state = normalize_lab_row(sample_row())
@@ -174,3 +183,47 @@ async def test_scorer_judges_available_deliverables() -> None:
     assert reward == 1.0
     assert state["criterion_results"][0]["verdict"] == "pass"
     assert state["lab_metrics"]["lab_judge_calls"] == 1.0
+
+
+@pytest.mark.asyncio
+async def test_scorer_skips_failed_judge_criteria() -> None:
+    state = normalize_lab_row(sample_row())
+    state["criteria"] = [
+        {
+            "id": "c1",
+            "title": "Passing criterion",
+            "match_criteria": "PASS if memo is good.",
+            "deliverables": ["memo.docx"],
+        },
+        {
+            "id": "c2",
+            "title": "Judge failure criterion",
+            "match_criteria": "PASS if memo is excellent.",
+            "deliverables": ["memo.docx"],
+        },
+        {
+            "id": "c3",
+            "title": "Failing criterion",
+            "match_criteria": "PASS if memo covers another point.",
+            "deliverables": ["memo.docx"],
+        },
+    ]
+    state["expected_deliverables"] = ["memo.docx"]
+    state["deliverables"] = {"memo.docx": "parsed memo"}
+    state["deliverable_errors"] = {}
+    state["missing_deliverables"] = []
+
+    reward = await HarveyLabScorer(judge=SelectiveFailingJudge()).score_rollout(state)
+
+    assert reward == pytest.approx(1 / 2)
+    assert [result["verdict"] for result in state["criterion_results"]] == [
+        "pass",
+        "skipped",
+        "fail",
+    ]
+    assert "judge unavailable for c2" in state["criterion_results"][1]["reasoning"]
+    assert state["lab_metrics"]["lab_criteria_passed"] == 1.0
+    assert state["lab_metrics"]["lab_criteria_total"] == 2.0
+    assert state["lab_metrics"]["lab_criteria_original_total"] == 3.0
+    assert state["lab_metrics"]["lab_criteria_skipped"] == 1.0
+    assert state["lab_metrics"]["lab_judge_errors"] == 1.0

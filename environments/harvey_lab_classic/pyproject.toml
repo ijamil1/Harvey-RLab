@@ -2,7 +2,7 @@
 name = "harvey-lab-classic"
 description = "A non-RLM, multi-turn Prime sandbox tool environment for Harvey's Legal Agent Benchmark."
 tags = ["legal", "tools", "sandbox", "multi-turn", "train", "eval"]
-version = "0.1.1"
+version = "0.1.2"
 requires-python = ">=3.10"
 dependencies = [
     "datasets>=4.0,<5",

@@ -8,6 +8,9 @@ from typing import Any, Protocol
 
 from openai import AsyncOpenAI
 
+DEFAULT_MAX_TOKENS = 4096
+RETRY_MAX_TOKENS_MULTIPLIER = 1.25
+
 
 class CriterionJudge(Protocol):
     async def evaluate(
@@ -56,14 +59,19 @@ class DeepSeekCriterionJudge:
             "Return JSON only with exactly two keys: "
             '{"verdict":"pass"|"fail","reasoning":"brief explanation"}.'
         )
+        retry_instruction = (
+            "\n\nDo not overthink. Return only the required JSON object."
+        )
         last_error: Exception | None = None
+        max_tokens = DEFAULT_MAX_TOKENS
         for attempt in range(self.max_attempts):
             try:
+                request_prompt = prompt if attempt == 0 else prompt + retry_instruction
                 response = await self.client.chat.completions.create(
                     model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=[{"role": "user", "content": request_prompt}],
                     temperature=0,
-                    max_tokens=2048,
+                    max_tokens=max_tokens,
                     response_format={"type": "json_object"},
                 )
                 text = response.choices[0].message.content or ""
@@ -71,6 +79,8 @@ class DeepSeekCriterionJudge:
                 try:
                     result = self._parse_result(text)
                 except ValueError as exc:
+                    if self._is_empty_json_response_error(exc, text):
+                        max_tokens = int(max_tokens * RETRY_MAX_TOKENS_MULTIPLIER)
                     raise self._diagnostic_parse_error(
                         exc,
                         text=text,
@@ -85,6 +95,10 @@ class DeepSeekCriterionJudge:
                     await asyncio.sleep(2**attempt)
         assert last_error is not None
         raise last_error
+
+    @staticmethod
+    def _is_empty_json_response_error(exc: ValueError, text: str) -> bool:
+        return not text and str(exc) == "judge response did not contain JSON"
 
     @staticmethod
     def _parse_result(text: str) -> dict[str, str]:
