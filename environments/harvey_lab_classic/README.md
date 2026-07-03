@@ -2,20 +2,23 @@
 
 ### Overview
 - **Environment ID**: `harvey-lab-classic`
-- **Short description**: Non-RLM Harvey LAB environment with provider-native tool calling and one Prime sandbox per rollout.
+- **Short description**: Verifiers implementation of [Harvey LAB](https://github.com/harveyai/harvey-labs), an open-source benchmark for evaluating LLM agents' ability to perform legal work in realistic environments.
 - **Tags**: legal, tools, sandbox, multi-turn, train, eval
 
 ### Datasets
-- **Primary dataset**: `irfanjamil/Harvey-LAB`
+- **Primary dataset**: [`irfanjamil/Harvey-LAB`](https://huggingface.co/datasets/irfanjamil/Harvey-LAB)
 - **Training split**: `train`
 - **Evaluation split**: `eval`
+- **Dataset selection**: fixed by the environment and not configurable through environment arguments.
 - **Document representation**: source documents are staged into the sandbox as text-backed files at their original paths under `/workspace/documents`.
 
-### Task
-- **Type**: multi-turn tool-use environment.
+### Tasks
+- **Type**: multi-turn tool-use environment for legal tasks.
 - **Model-facing tools**: `bash`, `read`, `write`, `edit`, `glob`, `grep`.
+- **Tool execution**: tool calls are executed in a Prime sandbox, with one sandbox per rollout.
+- **Sandbox image**: fixed by the environment and not configurable through environment arguments.
 - **Output expectations**: exact `.docx`/`.xlsx` filenames directly under `/workspace/output`.
-- **Rubric overview**: expected deliverables are parsed inside the sandbox with `parse-doc`, then each LAB criterion is judged with the same partial-credit contract used by `harvey_lab_rlm`.
+- **Rubric overview**: reward follows the method used in the original Harvey LAB: expected deliverables are parsed inside the sandbox with `parse-doc`, then the fixed `deepseek-v4-flash` judge model evaluates the agent's outputs against the task's fixed set of criteria.
 
 ### Quickstart
 Run an evaluation with default settings:
@@ -37,15 +40,22 @@ Notes:
 ### Environment Arguments
 | Arg | Type | Default | Description |
 | --- | ---- | ------- | ----------- |
-| `dataset_name` | str | `"irfanjamil/Harvey-LAB"` | Hugging Face dataset repo. |
 | `max_turns` | int | `200` | Maximum model turns. |
-| `judge_model` | str | `"deepseek-v4-flash"` | DeepSeek model for criterion judging. |
 | `judge_parallelism` | int | `6` | Concurrent criterion judge calls. |
-| `sandbox_image` | str | `irfanjamil10/harvey-lab-rlm-sandbox:0.1.0` | Prime sandbox image with Office tooling and `parse-doc`. |
 
 ### Secrets
 
 `PRIME_API_KEY` and `DEEPSEEK_API_KEY` may be exported in the shell, or placed in a `.env` file in the current working directory used to launch Python. Exported environment variables take precedence over `.env` values.
+
+### User Costs
+
+Eval costs come from three sources:
+
+- Prime sandbox usage: one rollout-scoped sandbox is created for each rollout. The sandbox uses 1 CPU core, 2 GB RAM, and 5 GB disk, with a fixed 17 minute lifetime limit. Sandbox pricing information is available in the [Prime Intellect sandbox docs](https://docs.primeintellect.ai/sandboxes/overview).
+- Inference for the model being evaluated. Lowering `max_turns` reduces the maximum number of model turns per rollout, which can limit inference cost and usually shortens rollout duration, reducing sandbox lifetime and sandbox cost.
+- Inference for the fixed `deepseek-v4-flash` LLM-as-a-judge reward model. The judge is called once per criterion that has the required parsed deliverables available, so judge inference cost scales with rollouts times criteria per rollout.
+
+The cost per rollout is capped by the model turn limit, the sandbox lifetime limit, and the use of a relatively cheap fixed judge model. The environment code does not add any other model-inference calls.
 
 ### Metrics
 | Metric | Meaning |

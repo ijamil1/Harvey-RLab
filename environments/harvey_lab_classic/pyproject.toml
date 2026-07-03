@@ -1,8 +1,8 @@
 [project]
 name = "harvey-lab-classic"
-description = "A non-RLM, multi-turn Prime sandbox tool environment for Harvey's Legal Agent Benchmark."
+description = "A Verifiers implementation of Harvey LAB as a multi-turn Prime sandbox tool environment."
 tags = ["legal", "tools", "sandbox", "multi-turn", "train", "eval"]
-version = "0.1.4"
+version = "0.1.5"
 requires-python = ">=3.10"
 dependencies = [
     "datasets>=4.0,<5",

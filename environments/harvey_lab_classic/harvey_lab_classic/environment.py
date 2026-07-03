@@ -19,20 +19,21 @@ from .tools import ALL_TOOLS
 
 SANDBOX_DOCKER_IMAGE = "irfanjamil10/harvey-lab-rlm-sandbox:0.1.0"
 SANDBOX_TIMEOUT_MINUTES = 17
+LAB_DATASET_NAME = "irfanjamil/Harvey-LAB"
+JUDGE_MODEL = "deepseek-v4-flash"
 
 
 class HarveyLabClassicTaskset(vf.Taskset):
     def __init__(
         self,
         *,
-        dataset_name: str,
         judge: CriterionJudge,
         judge_parallelism: int = 6,
     ) -> None:
         self.scorer = HarveyLabScorer(judge=judge, parallelism=judge_parallelism)
         super().__init__(
-            source=make_task_rows_builder(dataset_name, "train"),
-            eval_source=make_task_rows_builder(dataset_name, "eval"),
+            source=make_task_rows_builder(LAB_DATASET_NAME, "train"),
+            eval_source=make_task_rows_builder(LAB_DATASET_NAME, "eval"),
             taskset_id="harvey-lab-classic",
         )
 
@@ -82,12 +83,11 @@ class HarveyLabClassicHarness(vf.Harness):
         self,
         *,
         max_turns: int = 200,
-        sandbox_image: str = SANDBOX_DOCKER_IMAGE,
     ) -> None:
         self.classic_toolset = vf.Toolset(
             tools=ALL_TOOLS,
             sandbox={
-                "image": sandbox_image,
+                "image": SANDBOX_DOCKER_IMAGE,
                 "cpu_cores": 1.0,
                 "memory_gb": 2.0,
                 "disk_size_gb": 5.0,
@@ -188,11 +188,8 @@ def _load_project_dotenv() -> None:
 
 
 def load_environment(
-    dataset_name: str = "irfanjamil/Harvey-LAB",
     max_turns: int = 200,
-    judge_model: str = "deepseek-v4-flash",
     judge_parallelism: int = 6,
-    sandbox_image: str = SANDBOX_DOCKER_IMAGE,
     *,
     judge: CriterionJudge | None = None,
     **kwargs: Any,
@@ -203,16 +200,14 @@ def load_environment(
     _load_project_dotenv()
     vf.ensure_keys(["PRIME_API_KEY", "DEEPSEEK_API_KEY"])
     resolved_judge = judge or DeepSeekCriterionJudge(
-        model=judge_model,
+        model=JUDGE_MODEL,
         api_key=os.environ["DEEPSEEK_API_KEY"],
     )
     taskset = HarveyLabClassicTaskset(
-        dataset_name=dataset_name,
         judge=resolved_judge,
         judge_parallelism=judge_parallelism,
     )
     harness = HarveyLabClassicHarness(
         max_turns=max_turns,
-        sandbox_image=sandbox_image,
     )
     return vf.Env(taskset=taskset, harness=harness)

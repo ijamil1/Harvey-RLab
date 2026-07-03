@@ -7,7 +7,7 @@ import pytest
 
 import harvey_lab_classic.environment as environment_module
 from harvey_lab_classic.dataset import normalize_lab_row
-from harvey_lab_classic.environment import HarveyLabClassicTaskset
+from harvey_lab_classic.environment import LAB_DATASET_NAME, HarveyLabClassicTaskset
 from harvey_lab_classic.prompts import build_system_prompt
 from harvey_lab_classic.resources import collect_deliverables, stage_rollout_context
 from harvey_lab_classic.scoring import HarveyLabScorer
@@ -77,13 +77,20 @@ def test_taskset_wires_train_and_eval_sources(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(environment_module, "make_task_rows_builder", make_builder)
 
     taskset = HarveyLabClassicTaskset(
-        dataset_name="test/dataset",
         judge=PassingJudge(),
     )
 
-    assert [row["task_id"] for row in taskset.rows()] == ["test/dataset/train"]
-    assert [row["task_id"] for row in taskset.eval_rows()] == ["test/dataset/eval"]
+    assert [row["task_id"] for row in taskset.rows()] == [f"{LAB_DATASET_NAME}/train"]
+    assert [row["task_id"] for row in taskset.eval_rows()] == [
+        f"{LAB_DATASET_NAME}/eval"
+    ]
     assert requested_splits == ["train", "eval"]
+
+
+@pytest.mark.parametrize("locked_arg", ["dataset_name", "judge_model", "sandbox_image"])
+def test_load_environment_rejects_locked_environment_args(locked_arg: str) -> None:
+    with pytest.raises(TypeError, match=f"unsupported environment arguments: {locked_arg}"):
+        environment_module.load_environment(**{locked_arg: "custom-value"})
 
 
 def test_system_prompt_lists_skill_paths_without_inlining_manuals() -> None:
