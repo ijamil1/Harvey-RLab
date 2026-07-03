@@ -138,7 +138,8 @@ Exported environment variables take precedence over `.env`.
 Default environment arguments:
 
 - `dataset_name="irfanjamil/Harvey-LAB"`
-- `split="train"`
+- training dataset split: `train`
+- evaluation dataset split: `eval`
 - `max_turns=200`
 - `sub_model=None`, which means the root model is reused for sub-LLMs
 - `judge_model="deepseek-v4-flash"`

@@ -5,7 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
+import harvey_lab_classic.environment as environment_module
 from harvey_lab_classic.dataset import normalize_lab_row
+from harvey_lab_classic.environment import HarveyLabClassicTaskset
 from harvey_lab_classic.prompts import build_system_prompt
 from harvey_lab_classic.resources import collect_deliverables, stage_rollout_context
 from harvey_lab_classic.scoring import HarveyLabScorer
@@ -57,6 +59,31 @@ def test_dataset_normalization_preserves_first_user_message() -> None:
     assert row["prompt"] == [{"role": "user", "content": "Draft the requested memo."}]
     assert row["deliverables"] == ["memo.docx"]
     assert row["documents"] == {"source.docx": "Extracted source document text."}
+
+
+def test_taskset_wires_train_and_eval_sources(monkeypatch: pytest.MonkeyPatch) -> None:
+    requested_splits: list[str] = []
+
+    def make_builder(dataset_name: str, split: str):
+        requested_splits.append(split)
+
+        def build() -> list[dict]:
+            row = sample_row()
+            row["task_id"] = f"{dataset_name}/{split}"
+            return [row]
+
+        return build
+
+    monkeypatch.setattr(environment_module, "make_task_rows_builder", make_builder)
+
+    taskset = HarveyLabClassicTaskset(
+        dataset_name="test/dataset",
+        judge=PassingJudge(),
+    )
+
+    assert [row["task_id"] for row in taskset.rows()] == ["test/dataset/train"]
+    assert [row["task_id"] for row in taskset.eval_rows()] == ["test/dataset/eval"]
+    assert requested_splits == ["train", "eval"]
 
 
 def test_system_prompt_lists_skill_paths_without_inlining_manuals() -> None:

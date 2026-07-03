@@ -7,7 +7,8 @@
 
 ### Datasets
 - **Primary dataset**: `irfanjamil/Harvey-LAB`
-- **Default split**: `train`
+- **Training split**: `train`
+- **Evaluation split**: `eval`
 - **Document representation**: source documents are staged into the sandbox as text-backed files at their original paths under `/workspace/documents`.
 
 ### Task
@@ -37,7 +38,6 @@ Notes:
 | Arg | Type | Default | Description |
 | --- | ---- | ------- | ----------- |
 | `dataset_name` | str | `"irfanjamil/Harvey-LAB"` | Hugging Face dataset repo. |
-| `split` | str | `"train"` | Dataset split or slice expression. |
 | `max_turns` | int | `200` | Maximum model turns. |
 | `judge_model` | str | `"deepseek-v4-flash"` | DeepSeek model for criterion judging. |
 | `judge_parallelism` | int | `6` | Concurrent criterion judge calls. |

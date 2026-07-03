@@ -49,6 +49,37 @@ def dataset_builder() -> Dataset:
     )
 
 
+def tagged_dataset_builder(tag: str):
+    def build() -> Dataset:
+        return Dataset.from_list(
+            [
+                {
+                    "prompt": [{"role": "user", "content": f"{tag} prompt"}],
+                    "info": {
+                        "task_id": f"{tag}/task",
+                        "practice_area": "test",
+                        "title": "Test",
+                        "work_type": "draft",
+                        "tags": [],
+                        "instructions": f"{tag} prompt",
+                        "deliverables": ["memo.docx"],
+                        "criteria": [
+                            {
+                                "id": "C-001",
+                                "title": "Exists",
+                                "deliverables": ["memo.docx"],
+                                "match_criteria": "PASS if it exists.",
+                            }
+                        ],
+                        "documents": {"facts.txt": "facts"},
+                    },
+                }
+            ]
+        )
+
+    return build
+
+
 def test_environment_exposes_only_python_repl_to_root_model() -> None:
     env = HarveyLabRLMEnv(
         dataset_builder=dataset_builder,
@@ -72,6 +103,20 @@ def test_environment_exposes_only_python_repl_to_root_model() -> None:
     metric_names = env.rubric._get_reward_func_names()
     assert "lab_rollout_duration_seconds" in metric_names
     assert "lab_sandbox_lifetime_seconds" in metric_names
+
+
+def test_environment_exposes_distinct_train_and_eval_datasets() -> None:
+    env = HarveyLabRLMEnv(
+        dataset_builder=tagged_dataset_builder("train"),
+        eval_dataset_builder=tagged_dataset_builder("eval"),
+        judge=NoopJudge(),
+    )
+
+    train_row = env.get_dataset()[0]
+    eval_row = env.get_eval_dataset()[0]
+
+    assert train_row["info"]["task_id"] == "train/task"
+    assert eval_row["info"]["task_id"] == "eval/task"
 
 
 @pytest.mark.asyncio

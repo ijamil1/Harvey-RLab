@@ -49,6 +49,7 @@ class HarveyLabRLMEnv(RLMEnv):
         self,
         *,
         dataset_builder: Callable[[], Dataset],
+        eval_dataset_builder: Callable[[], Dataset] | None = None,
         judge: CriterionJudge,
         judge_parallelism: int = 6,
         max_turns: int = 200,
@@ -59,6 +60,7 @@ class HarveyLabRLMEnv(RLMEnv):
         rubric = HarveyLabRubric(judge=judge, parallelism=judge_parallelism)
         super().__init__(
             dataset=dataset_builder,
+            eval_dataset=eval_dataset_builder or dataset_builder,
             rubric=rubric,
             max_turns=max_turns,
             tools=[],
@@ -249,7 +251,6 @@ def _load_project_dotenv() -> None:
 
 def load_environment(
     dataset_name: str = "irfanjamil/Harvey-LAB",
-    split: str = "train",
     max_turns: int = 200,
     sub_model: str | None = None,
     judge_model: str = "deepseek-v4-flash",
@@ -265,7 +266,8 @@ def load_environment(
         api_key=os.environ["DEEPSEEK_API_KEY"],
     )
     return HarveyLabRLMEnv(
-        dataset_builder=make_dataset_builder(dataset_name, split),
+        dataset_builder=make_dataset_builder(dataset_name, "train"),
+        eval_dataset_builder=make_dataset_builder(dataset_name, "eval"),
         judge=resolved_judge,
         judge_parallelism=judge_parallelism,
         max_turns=max_turns,

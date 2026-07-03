@@ -26,13 +26,13 @@ class HarveyLabClassicTaskset(vf.Taskset):
         self,
         *,
         dataset_name: str,
-        split: str,
         judge: CriterionJudge,
         judge_parallelism: int = 6,
     ) -> None:
         self.scorer = HarveyLabScorer(judge=judge, parallelism=judge_parallelism)
         super().__init__(
-            source=make_task_rows_builder(dataset_name, split),
+            source=make_task_rows_builder(dataset_name, "train"),
+            eval_source=make_task_rows_builder(dataset_name, "eval"),
             taskset_id="harvey-lab-classic",
         )
 
@@ -189,7 +189,6 @@ def _load_project_dotenv() -> None:
 
 def load_environment(
     dataset_name: str = "irfanjamil/Harvey-LAB",
-    split: str = "train",
     max_turns: int = 200,
     judge_model: str = "deepseek-v4-flash",
     judge_parallelism: int = 6,
@@ -209,7 +208,6 @@ def load_environment(
     )
     taskset = HarveyLabClassicTaskset(
         dataset_name=dataset_name,
-        split=split,
         judge=resolved_judge,
         judge_parallelism=judge_parallelism,
     )

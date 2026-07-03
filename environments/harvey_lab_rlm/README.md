@@ -91,7 +91,6 @@ so use a direct Hub-slug command for platform acceptance.
 | Argument | Default | Meaning |
 | --- | --- | --- |
 | `dataset_name` | `irfanjamil/Harvey-LAB` | Hugging Face dataset ID |
-| `split` | `train` | Dataset split |
 | `max_turns` | `200` | Maximum root-model turns |
 | `sub_model` | root model | Model used by `llm_batch` |
 | `judge_model` | `deepseek-v4-flash` | Criterion judge model |
