@@ -27,6 +27,8 @@ SANDBOX_DOCKER_IMAGE = "irfanjamil10/harvey-lab-rlm-sandbox:0.1.0"
 SANDBOX_WAIT_FOR_CREATION_MAX_ATTEMPTS = 240
 SANDBOX_TIMEOUT_MINUTES = 17
 ROLLOUT_TIMEOUT_SECONDS = 20 * 60
+LAB_DATASET_NAME = "irfanjamil/Harvey-LAB"
+JUDGE_MODEL = "deepseek-v4-flash"
 
 
 class HarveyLabTimingRubric(vf.Rubric):
@@ -250,24 +252,25 @@ def _load_project_dotenv() -> None:
 
 
 def load_environment(
-    dataset_name: str = "irfanjamil/Harvey-LAB",
     max_turns: int = 200,
     sub_model: str | None = None,
-    judge_model: str = "deepseek-v4-flash",
     judge_parallelism: int = 6,
     *,
     judge: CriterionJudge | None = None,
     **kwargs: Any,
 ) -> vf.Environment:
+    if kwargs:
+        unknown = ", ".join(sorted(kwargs))
+        raise TypeError(f"unsupported environment arguments: {unknown}")
     _load_project_dotenv()
     vf.ensure_keys(["PRIME_API_KEY", "DEEPSEEK_API_KEY"])
     resolved_judge = judge or DeepSeekCriterionJudge(
-        model=judge_model,
+        model=JUDGE_MODEL,
         api_key=os.environ["DEEPSEEK_API_KEY"],
     )
     return HarveyLabRLMEnv(
-        dataset_builder=make_dataset_builder(dataset_name, "train"),
-        eval_dataset_builder=make_dataset_builder(dataset_name, "eval"),
+        dataset_builder=make_dataset_builder(LAB_DATASET_NAME, "train"),
+        eval_dataset_builder=make_dataset_builder(LAB_DATASET_NAME, "eval"),
         judge=resolved_judge,
         judge_parallelism=judge_parallelism,
         max_turns=max_turns,

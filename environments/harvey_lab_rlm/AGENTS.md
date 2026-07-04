@@ -135,14 +135,17 @@ DEEPSEEK_API_KEY=...
 
 Exported environment variables take precedence over `.env`.
 
-Default environment arguments:
+Environment-owned settings:
 
-- `dataset_name="irfanjamil/Harvey-LAB"`
+- dataset: `irfanjamil/Harvey-LAB`
 - training dataset split: `train`
 - evaluation dataset split: `eval`
+- judge model: `deepseek-v4-flash`
+
+Configurable environment arguments:
+
 - `max_turns=200`
 - `sub_model=None`, which means the root model is reused for sub-LLMs
-- `judge_model="deepseek-v4-flash"`
 - `judge_parallelism=6`
 
 The sandbox image is fixed in code as

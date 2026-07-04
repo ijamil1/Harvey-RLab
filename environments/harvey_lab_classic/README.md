@@ -12,7 +12,7 @@
 - **Dataset selection**: fixed by the environment and not configurable through environment arguments.
 - **Document representation**: source documents are staged into the sandbox as text-backed files at their original paths under `/workspace/documents`.
 
-### Tasks
+### Environment Specifics
 - **Type**: multi-turn tool-use environment for legal tasks.
 - **Model-facing tools**: `bash`, `read`, `write`, `edit`, `glob`, `grep`.
 - **Tool execution**: tool calls are executed in a Prime sandbox, with one sandbox per rollout.
@@ -53,17 +53,20 @@ Eval costs come from three sources:
 
 - Prime sandbox usage: one rollout-scoped sandbox is created for each rollout. The sandbox uses 1 CPU core, 2 GB RAM, and 5 GB disk, with a fixed 17 minute lifetime limit. Sandbox pricing information is available in the [Prime Intellect sandbox docs](https://docs.primeintellect.ai/sandboxes/overview).
 - Inference for the model being evaluated. Lowering `max_turns` reduces the maximum number of model turns per rollout, which can limit inference cost and usually shortens rollout duration, reducing sandbox lifetime and sandbox cost.
-- Inference for the fixed `deepseek-v4-flash` LLM-as-a-judge reward model. The judge is called once per criterion that has the required parsed deliverables available, so judge inference cost scales with rollouts times criteria per rollout.
+- Inference for the fixed `deepseek-v4-flash` LLM-as-a-judge reward model. Each rollout is associated with a list of task criteria, and the judge evaluates each criterion individually. A rollout with N criteria therefore uses N judge calls, so judge inference cost scales with rollouts times criteria per rollout.
 
 The cost per rollout is capped by the model turn limit, the sandbox lifetime limit, and the use of a relatively cheap fixed judge model. The environment code does not add any other model-inference calls.
+
+### Reward
+
+A rollout's reward is the fraction of task criteria judged passing. This scalar is the training signal used for RL training.
 
 ### Metrics
 | Metric | Meaning |
 | ------ | ------- |
-| `reward` | Fraction of LAB criteria judged passing. |
 | `lab_criteria_passed` | Passing criteria count. |
 | `lab_criteria_total` | Total criteria count. |
-| `lab_criterion_pass_rate` | Same scalar as reward before weighting. |
+| `lab_criterion_pass_rate` | Same scalar as rollout reward. |
 | `lab_missing_deliverables` | Expected deliverables not found exactly under `/workspace/output`. |
 | `lab_deliverable_errors` | Expected deliverables that failed sandbox parsing. |
 | `lab_judge_calls` | Criterion judge calls made. |

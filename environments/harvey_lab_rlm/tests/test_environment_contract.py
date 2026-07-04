@@ -7,9 +7,12 @@ import pytest
 from verifiers.envs.experimental.rlm_env import RLMEnv
 from verifiers.types import RolloutTiming, UserMessage
 
+import harvey_lab_rlm.environment as environment_module
 from harvey_lab_rlm.environment import (
     HarveyLabRLMEnv,
     HarveyLabTimingRubric,
+    JUDGE_MODEL,
+    LAB_DATASET_NAME,
     ROLLOUT_TIMEOUT_SECONDS,
     SANDBOX_DOCKER_IMAGE,
     SANDBOX_TIMEOUT_MINUTES,
@@ -117,6 +120,23 @@ def test_environment_exposes_distinct_train_and_eval_datasets() -> None:
 
     assert train_row["info"]["task_id"] == "train/task"
     assert eval_row["info"]["task_id"] == "eval/task"
+
+
+@pytest.mark.parametrize(
+    "locked_arg",
+    ["dataset_name", "judge_model", "sandbox_image", "sandbox_docker_image"],
+)
+def test_load_environment_rejects_locked_environment_args(locked_arg: str) -> None:
+    with pytest.raises(
+        TypeError,
+        match=f"unsupported environment arguments: {locked_arg}",
+    ):
+        environment_module.load_environment(**{locked_arg: "custom-value"})
+
+
+def test_locked_environment_constants_are_canonical() -> None:
+    assert LAB_DATASET_NAME == "irfanjamil/Harvey-LAB"
+    assert JUDGE_MODEL == "deepseek-v4-flash"
 
 
 @pytest.mark.asyncio
